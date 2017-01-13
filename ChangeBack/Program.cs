@@ -24,16 +24,25 @@ enum Currency : byte
     Dollar = 100
 }
 
+
+
 namespace ChangeBack
 {
     class Program
     {
         private static string CurrencySymbol = "$";
-        private static string CurrencyPattern = @""; // TODO: Write the pattern
+        /// <summary>
+        /// Any amount of comma-separated digits, followed by an optional pair 
+        /// of decimal point and TWO decimals (we don't care about pesky
+        /// hundredths-of-a-cent!)
+        /// </summary>
+        private static string CurrencyPattern = @"\$[\d,]+(\.\d{0,2})?";
         static void Main(string[] args)
         {
 
         }
+
+        
 
         static void PrintHelp()
         {
