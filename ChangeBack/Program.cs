@@ -36,13 +36,60 @@ namespace ChangeBack
         /// of decimal point and TWO decimals (we don't care about pesky
         /// hundredths-of-a-cent!)
         /// </summary>
-        private static string CurrencyPattern = @"\$[\d,]+(\.\d{0,2})?";
+        private static Regex CurrencyPattern = new Regex(@"\$([\d,]+(?\.\d{0,2})?)");
+
+        private static Currency[] CURRENCY_SORT_ORDER = { Currency.Dollar, Currency.Quarter, Currency.Dime, Currency.Nickel, Currency.Penny };
+
         static void Main(string[] args)
         {
 
         }
 
-        
+        static Dictionary<Currency, int> GetCurrencyAmountFromString(string currStr)
+        {
+            Dictionary<Currency, int> currAmt = new Dictionary<Currency, int>();
+            Match match = CurrencyPattern.Match(currStr);
+
+            currAmt[Currency.Dollar] = GetDollarsFromString(currStr);
+
+            int cents = GetCentsFromString(currStr);
+
+            // Loop through all currency denominations from largest to smallest
+            // and, if there is enough money to be converted into the
+            // denomination, convert it.
+            // By going from largest first to smallest last, we use the fewest
+            // number of currency.
+            for (int i = 0; i < CURRENCY_SORT_ORDER.Length - 1; i++)
+            {
+                // Converted to byte here because Currency is represented
+                // internally as bytes.
+                while (cents > (byte)CURRENCY_SORT_ORDER[i])
+                {
+                    currAmt[CURRENCY_SORT_ORDER[i]] += 1;
+                    cents -= (byte)CURRENCY_SORT_ORDER[i];
+                }
+            }
+
+            return currAmt;
+        }
+
+        static int GetDollarsFromString(string currStr)
+        {
+            Match match = CurrencyPattern.Match(currStr);
+
+            int dollars = (int)Math.Floor(float.Parse(match.Captures[0].ToString()));
+
+            return dollars;
+        }
+
+        static int GetCentsFromString(string currStr)
+        {
+            Match match = CurrencyPattern.Match(currStr);
+
+            int cents = (int)(float.Parse(match.Captures[0].ToString()) - GetDollarsFromString(currStr));
+
+            return cents;
+        }
 
         static void PrintHelp()
         {
