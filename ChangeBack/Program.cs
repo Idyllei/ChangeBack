@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 using System.Text.RegularExpressions;
 
-using CurrencyAmount = System.Collections.Generic.Dictionary<ChangeBack.Currency, int>;
+
 
 // TODO: Actually implement the Regex parser to get the cost and paid amounts, calculate the change, and figure out the coins to give back.
 
@@ -16,6 +16,7 @@ using CurrencyAmount = System.Collections.Generic.Dictionary<ChangeBack.Currency
 
 namespace ChangeBack
 {
+    using CurrencyAmount = System.Collections.Generic.Dictionary<Currency, int>;
     /// <summary>
     /// Currency based on the Penny with value 1.
     /// A dollar is the same as 100 Pennies, so it has a value of 100.
@@ -49,16 +50,16 @@ namespace ChangeBack
 
             PrintHelp();
 
-                Console.WriteLine("Starting Main");
+                // Console.WriteLine("Starting Main");
                 CurrencyAmount cost = GetCurrencyAmountFromString(args[0]);
 
-                Console.WriteLine("Parsed cost, begin Parse paid");
+                // Console.WriteLine("Parsed cost, begin Parse paid");
                 CurrencyAmount paid = GetCurrencyAmountFromString(args[1]);
 
-                Console.WriteLine("Parsed paid, begin calculate change");
+                // Console.WriteLine("Parsed paid, begin calculate change");
                 CurrencyAmount change = SubtractCurrencyAmounts(paid, cost);
 
-                Console.WriteLine("Calculated change, begin print change");
+                // Console.WriteLine("Calculated change, begin print change");
 
                 Console.WriteLine("Change: {0}", GetStringFromCurrencyAmount(change));
 
