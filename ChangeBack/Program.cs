@@ -71,32 +71,33 @@ namespace ChangeBack
             CurrencyAmount currAmt = new CurrencyAmount();
             Match match = CurrencyPattern.Match(currStr);
 
-            string dollarString = match.Groups["dollars"].Value;
-            string centsString = match.Groups["cents"].Value;
 
-            currAmt[Currency.Dollar] = GetDollarsFromString(dollarString);
+            currAmt[Currency.Dollar] = GetDollarsFromString(match);
 
-            int cents = GetCentsFromString(currStr);
+            int cents = GetCentsFromString(match);
 
             // Loop through all currency denominations from largest to smallest
             // and, if there is enough money to be converted into the
             // denomination, convert it.
             // By going from largest first to smallest last, we use the fewest
             // number of currency.
-            for (int i = 0; i < (CURRENCY_SORT_ORDER.Length - 1); i++)
+            foreach (Currency denom in CURRENCY_SORT_ORDER)
             {
                 // Converted to byte here because Currency is represented
                 // internally as bytes.
-                while (cents > (int)CURRENCY_SORT_ORDER[i])
+                while (cents >= (int)denom)
                 {
-                    currAmt[CURRENCY_SORT_ORDER[i]] += 1;
-                    cents -= (int)CURRENCY_SORT_ORDER[i];
+                    int oldVal = 0;
+                    currAmt.TryGetValue(denom, out oldVal);
+                    currAmt[denom] = oldVal + 1;
+
+                    cents -= (int)denom;
                 }
 
-                // Make sure to set every denomination, even if it is zero (0).
-                if (!currAmt.ContainsKey(CURRENCY_SORT_ORDER[i]))
+                // Make sure to set every denomination.
+                if (!(currAmt.ContainsKey(denom)))
                 {
-                    currAmt[CURRENCY_SORT_ORDER[i]] = 0;
+                    currAmt[denom] = 0;
                 }
             }
 
@@ -107,45 +108,52 @@ namespace ChangeBack
         {
             CurrencyAmount currAmt = new CurrencyAmount();
 
-            for (int i = 0; i < CURRENCY_SORT_ORDER.Length - 1; i++)
+            foreach (Currency denom in CURRENCY_SORT_ORDER)
             {
-                while (c > (int)CURRENCY_SORT_ORDER[i])
+                while (c >= (int)denom)
                 {
                     int oldVal = 0;
-                    currAmt.TryGetValue(CURRENCY_SORT_ORDER[i], out oldVal);
-                    currAmt[CURRENCY_SORT_ORDER[i]] = oldVal + 1;
-                    c -= (int)CURRENCY_SORT_ORDER[i];
+                    currAmt.TryGetValue(denom, out oldVal);
+                    currAmt[denom] = oldVal + 1;
+                    c -= (int)denom;
                 }
 
                 // Make sure to set every denomination, even if it is zero (0).
-                if (!currAmt.ContainsKey(CURRENCY_SORT_ORDER[i]))
+                if (!currAmt.ContainsKey(denom))
                 {
-                    currAmt[CURRENCY_SORT_ORDER[i]] = 0;
+                    currAmt[denom] = 0;
                 }
             }
 
             return currAmt;
         }
 
-        static int GetDollarsFromString(string dollarString)
+        static int GetDollarsFromString(Match match)
         {
             // Match match = CurrencyPattern.Match(currStr);
 
-            int dollars = int.Parse(dollarString);
+            int dollars = 0;
+            try
+            {
+                dollars = int.Parse(match.Groups["dollars"].Value.ToString());
+            }
+            catch
+            {
+                dollars = 0;
+            }
 
             return dollars;
         }
 
-        static int GetCentsFromString(string currStr)
+        static int GetCentsFromString(Match match)
         {
-            Match match = CurrencyPattern.Match(currStr);
             int cents = 0;
 
             try
             {
-                cents = int.Parse(match.Captures[1].ToString());
+                cents = int.Parse(match.Groups["cents"].Value.ToString());
             }
-            catch (ArgumentOutOfRangeException)
+            catch
             {
                 cents = 0;
             }
@@ -171,9 +179,11 @@ namespace ChangeBack
             int total = 0;
             for (int i = 0; i < (CURRENCY_SORT_ORDER.Length - 1); i++)
             {
+                int value = 0;
+                c.TryGetValue(CURRENCY_SORT_ORDER[i], out value);
                 // Turn the mapped count of each denomination into an integer 
                 // representing the number of pennies it is equivalent to.
-                total += c[CURRENCY_SORT_ORDER[i]] * (int)CURRENCY_SORT_ORDER[i];
+                total += value * (int)CURRENCY_SORT_ORDER[i];
             }
 
             return total;
