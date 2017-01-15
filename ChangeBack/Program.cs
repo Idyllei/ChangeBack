@@ -72,9 +72,9 @@ namespace ChangeBack
             Match match = CurrencyPattern.Match(currStr);
 
 
-            currAmt[Currency.Dollar] = GetDollarsFromString(match);
+            currAmt[Currency.Dollar] = GetDollarsFromMatch(match);
 
-            int cents = GetCentsFromString(match);
+            int cents = GetCentsFromMatch(match);
 
             // Loop through all currency denominations from largest to smallest
             // and, if there is enough money to be converted into the
@@ -128,7 +128,7 @@ namespace ChangeBack
             return currAmt;
         }
 
-        static int GetDollarsFromString(Match match)
+        static int GetDollarsFromMatch(Match match)
         {
             // Match match = CurrencyPattern.Match(currStr);
 
@@ -145,7 +145,7 @@ namespace ChangeBack
             return dollars;
         }
 
-        static int GetCentsFromString(Match match)
+        static int GetCentsFromMatch(Match match)
         {
             int cents = 0;
 
@@ -161,18 +161,6 @@ namespace ChangeBack
             return cents;
         }
 
-        /*
-        static int GetCurrencyAmountFromInt(CurrencyAmount c)
-        {
-            int total = 0;
-            for (int i = 0; i < CURRENCY_SORT_ORDER.Length - 1; i++)
-            {
-                total += c[CURRENCY_SORT_ORDER[i]] * (int)CURRENCY_SORT_ORDER[i];
-            }
-
-            return total;
-        }
-        */
 
         static int GetIntFromCurrencyAmount(CurrencyAmount c)
         {
@@ -198,10 +186,15 @@ namespace ChangeBack
             return GetCurrencyAmountFromInt(diff);
         }
 
+        static decimal GetDecimalFromCurrencyAmount(CurrencyAmount c)
+        {
+            return (decimal)GetIntFromCurrencyAmount(c) / (byte)Currency.Dollar;
+        }
+
         static string GetStringFromCurrencyAmount(CurrencyAmount c)
         {
-            return String.Format("[Total: {0}]:\n\tDollars: {1}\n\tQuarters: {2}\n\tDimes: {3}\n\tNickels: {4}\n\tPennies: {5}", 
-                GetIntFromCurrencyAmount(c),
+            return String.Format("[Total: {0:c}]:\n\tDollars: {1}\n\tQuarters: {2}\n\tDimes: {3}\n\tNickels: {4}\n\tPennies: {5}", 
+                GetDecimalFromCurrencyAmount(c),
                 (byte)c[Currency.Dollar],
                 (byte)c[Currency.Quarter],
                 (byte)c[Currency.Dime],
