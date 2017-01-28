@@ -1,22 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 using System.Text.RegularExpressions;
 
 
 
-// TODO: Actually implement the Regex parser to get the cost and paid amounts, calculate the change, and figure out the coins to give back.
-
-
+// TODO: make the currency digit separator customizable. It is currently hardcoded to be a comma (,).
+// TODO: make the currency symbol customizable. It is currently hardcoded to be a dollar sign ($).
 
 
 
 namespace ChangeBack
 {
     using CurrencyAmount = System.Collections.Generic.Dictionary<Currency, int>;
+
+
     /// <summary>
     /// Currency based on the Penny with value 1.
     /// A dollar is the same as 100 Pennies, so it has a value of 100.
@@ -36,41 +33,59 @@ namespace ChangeBack
 
     class Program
     {
-        /// <summary>
-        /// Any amount of comma-separated digits, followed by an optional pair 
-        /// of decimal point and TWO decimals (we don't care about pesky
-        /// hundredths-of-a-cent!)
-        /// </summary>
-        private static Regex CurrencyPattern = new Regex(@"(?<dollars>[\d,]+)\.(?<cents>\d{0,2})");
+        private static RegexOptions BetaCurrPttn2Opts = RegexOptions.IgnorePatternWhitespace | RegexOptions.Multiline | RegexOptions.ExplicitCapture;
+        private static Regex BetaCurrPttn2 = new Regex(@"
+                                                        (?<dollarSign>\$\s*)                # We will allow a dollar sign at the beginning or the end. Check at front.
+                                                        (?(dollarSign)                      # IF dollar sign at beginning
+                                                            (?<money>
+                                                                (?<dollars>(\d*,?)*)  # Allow digits with a comma separating them
+                                                                \.?                         # Allow a decimal place
+                                                                (?<cents>\d*)               # Allow any number of decimal places
+                                                            )                               # END ?<money>
+                                                            |                               # ELSE
+                                                            (
+                                                                \k<money>                   # reuse <money> pattern
+                                                                \s*?
+                                                                \k<dollarSign>?             # Allow dollar sign at end if not at front
+                                                            )                               # END ?(dollarSign)
+                                                         )
+                                                        ",
+                                                        BetaCurrPttn2Opts);
 
         private static Currency[] CURRENCY_SORT_ORDER = { Currency.Dollar, Currency.Quarter, Currency.Dime, Currency.Nickel, Currency.Penny };
+
 
         static void Main(string[] args)
         {
 
             PrintHelp();
 
-                // Console.WriteLine("Starting Main");
-                CurrencyAmount cost = GetCurrencyAmountFromString(args[0]);
+            // Console.WriteLine("Starting Main");
+            CurrencyAmount cost = GetCurrencyAmountFromString(args[0]);
 
-                // Console.WriteLine("Parsed cost, begin Parse paid");
-                CurrencyAmount paid = GetCurrencyAmountFromString(args[1]);
+            // Console.WriteLine(String.Format("Cost: {0}", GetStringFromCurrencyAmount(cost)));
+                
+            // Console.WriteLine("Parsed cost, begin Parse paid");
+            CurrencyAmount paid = GetCurrencyAmountFromString(args[1]);
 
-                // Console.WriteLine("Parsed paid, begin calculate change");
-                CurrencyAmount change = SubtractCurrencyAmounts(paid, cost);
+            // Console.WriteLine(String.Format("Paid: {0}", GetStringFromCurrencyAmount(paid)));
 
-                // Console.WriteLine("Calculated change, begin print change");
+            // Console.WriteLine("Parsed paid, begin calculate change");
+            CurrencyAmount change = SubtractCurrencyAmounts(paid, cost);
 
-                Console.WriteLine("Change: {0}", GetStringFromCurrencyAmount(change));
+            // Console.WriteLine("Calculated change, begin print change");
+
+            Console.WriteLine("Change: {0}", GetStringFromCurrencyAmount(change));
 
             Console.ReadLine();
 
         }
 
+
         static CurrencyAmount GetCurrencyAmountFromString(string currStr)
         {
             CurrencyAmount currAmt = new CurrencyAmount();
-            Match match = CurrencyPattern.Match(currStr);
+            Match match = BetaCurrPttn2.Match(currStr);
 
 
             currAmt[Currency.Dollar] = GetDollarsFromMatch(match);
@@ -105,6 +120,7 @@ namespace ChangeBack
             return currAmt;
         }
 
+
         static CurrencyAmount GetCurrencyAmountFromInt(int c)
         {
             CurrencyAmount currAmt = new CurrencyAmount();
@@ -129,6 +145,7 @@ namespace ChangeBack
             return currAmt;
         }
 
+
         static int GetDollarsFromMatch(Match match)
         {
             // Match match = CurrencyPattern.Match(currStr);
@@ -136,7 +153,13 @@ namespace ChangeBack
             int dollars = 0;
             try
             {
-                dollars = int.Parse(match.Groups["dollars"].Value.ToString());
+                string dollarString = match.Groups["dollars"].Value.ToString();
+
+                // Remove all separators (currently commas) from the string by replacing with empty strings.
+                /// TODO: instead of harcoding a comma as separator, make it customizable
+                string prunedDollarString = dollarString.Replace(",", "");
+
+                dollars = int.Parse(prunedDollarString);
             }
             catch
             {
@@ -146,13 +169,17 @@ namespace ChangeBack
             return dollars;
         }
 
+
         static int GetCentsFromMatch(Match match)
         {
             int cents = 0;
 
             try
             {
-                cents = int.Parse(match.Groups["cents"].Value.ToString());
+                // centsString doesn't use a separator, so we don't need to prune it like a dollarString.
+                string centsString = match.Groups["cents"].Value.ToString();
+
+                cents = int.Parse(centsString);
             }
             catch
             {
@@ -166,13 +193,13 @@ namespace ChangeBack
         static int GetIntFromCurrencyAmount(CurrencyAmount c)
         {
             int total = 0;
-            for (int i = 0; i < (CURRENCY_SORT_ORDER.Length - 1); i++)
+            foreach (Currency denom in CURRENCY_SORT_ORDER)
             {
                 int value = 0;
-                c.TryGetValue(CURRENCY_SORT_ORDER[i], out value);
+                c.TryGetValue(denom, out value);
                 // Turn the mapped count of each denomination into an integer 
                 // representing the number of pennies it is equivalent to.
-                total += value * (int)CURRENCY_SORT_ORDER[i];
+                total += value * (int)denom;
             }
 
             return total;
